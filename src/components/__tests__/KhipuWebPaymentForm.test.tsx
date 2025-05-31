@@ -166,12 +166,10 @@ describe('KhipuWebPaymentForm', () => {  beforeAll(() => {
         })
       );
     });
-  });
-
-  test('debe manejar error cuando Khipu SDK no está disponible', async () => {
+  });  test('debe manejar error cuando Khipu SDK no está disponible', async () => {
     // Temporalmente remover window.Khipu
     const originalKhipu = window.Khipu;
-    delete (window as any).Khipu;
+    delete (window as unknown as Record<string, unknown>).Khipu;
 
     const mockPaymentResponse = {
       success: true,

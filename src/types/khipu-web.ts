@@ -41,11 +41,7 @@ export interface KhipuWeb {
   restart(): void;
 }
 
-// Declaración global para TypeScript
-declare global {
-  interface Window {
-    Khipu: new () => KhipuWeb;
-  }
-}
+// No necesitamos declaración global aquí ya que existe en khipu.ts
+// La declaración específica se maneja en tiempo de ejecución
 
 export {};

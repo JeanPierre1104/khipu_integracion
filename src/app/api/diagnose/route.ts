@@ -1,9 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   console.log('🔍 === DIAGNÓSTICO KHIPU API v3 ===');
   
-  const results: any = {
+  const results: {
+    timestamp: string;
+    tests: Array<{
+      name: string;
+      status: string;
+      details: Record<string, unknown>;
+    }>;
+  } = {
     timestamp: new Date().toISOString(),
     tests: []
   };
@@ -120,7 +127,7 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const overallStatus = results.tests.every((test: any) => test.status === 'OK') ? 'ALL_OK' : 'ISSUES_FOUND';
+  const overallStatus = results.tests.every((test) => test.status === 'OK') ? 'ALL_OK' : 'ISSUES_FOUND';
 
   console.log('🏁 Diagnóstico completado:', overallStatus);
 

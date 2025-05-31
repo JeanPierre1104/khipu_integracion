@@ -4,7 +4,20 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 export default function DiagnosticsPage() {
-  const [diagnosticData, setDiagnosticData] = useState<any>(null);
+  const [diagnosticData, setDiagnosticData] = useState<{
+    timestamp: string;
+    environment: string;
+    environment_variables: Record<string, string>;
+    khipu_v3_diagnostics: {
+      status: string;
+      message: string;
+      details?: unknown;
+    };
+    khipu_v2_diagnostics: {
+      status: string;
+      message: string;
+    };
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -191,7 +204,7 @@ export default function DiagnosticsPage() {
                 Para el entorno de pruebas con DemoBank en Chile, asegúrate de:
                 <ul className="list-disc list-inside mt-2 space-y-1">
                   <li>Limitar los montos a máximo 5.000 CLP</li>
-                  <li>Usar la moneda 'CLP' en todas las transacciones</li>
+                  <li>Usar la moneda &apos;CLP&apos; en todas las transacciones</li>
                   <li>Configurar correctamente las URLs de retorno</li>
                 </ul>
               </p>

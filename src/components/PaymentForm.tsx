@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { BankValidator } from './BankValidator';
+import BankValidator from './BankValidator';
 
 export default function PaymentForm() {
     const [loading, setLoading] = useState(false);
@@ -58,10 +58,9 @@ export default function PaymentForm() {
             
             // Redirigir automáticamente a la URL de pago de Khipu
             window.open(data.data.payment_url, '_blank');
-            
-        } catch (err: any) {
+              } catch (err: unknown) {
             console.error('❌ Error en pago:', err);
-            setError(err.message || 'Error al procesar el pago');
+            setError(err instanceof Error ? err.message : 'Error al procesar el pago');
         } finally {
             setLoading(false);
         }
@@ -181,11 +180,14 @@ export default function PaymentForm() {
                         rows={3}
                         placeholder="Descripción detallada del pago (opcional)"
                     />
-                </div>
-
-                {/* Componente de validación de bancos */}
+                </div>                {/* Componente de validación de bancos */}
                 <div className="pt-2 border-t border-gray-200">
-                    <BankValidator />
+                    <BankValidator 
+                        amount={parseInt(formData.amount) || 0}
+                        onValidBanksChange={(banks) => {
+                            console.log('Bancos válidos:', banks);
+                        }}
+                    />
                 </div>
 
                 <button

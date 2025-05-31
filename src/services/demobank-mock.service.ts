@@ -55,12 +55,11 @@ export class DemoBankMockService {
     // Generar respuesta mock que simula DemoBank
     const paymentId = `demo_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3002';
-    
-    const mockResponse: MockPaymentResponse = {
+      const mockResponse: MockPaymentResponse = {
       payment_id: paymentId,
-      payment_url: `https://payment.khipu.com/bank/demo/${paymentId}`,
-      simplified_transfer_url: `https://payment.khipu.com/demo-simple/${paymentId}`,
-      transfer_url: `https://payment.khipu.com/demo-transfer/${paymentId}`,
+      payment_url: `${baseUrl}/demo-payment/${paymentId}`,
+      simplified_transfer_url: `${baseUrl}/demo-payment/${paymentId}?mode=simple`,
+      transfer_url: `${baseUrl}/demo-payment/${paymentId}?mode=transfer`,
       app_url: `khipu://payment/${paymentId}`,
       ready_for_terminal: true,
       status: 'pending',

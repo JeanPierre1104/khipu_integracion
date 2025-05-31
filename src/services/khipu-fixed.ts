@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 import crypto from 'crypto';
 
 interface CreatePaymentParams {
@@ -17,6 +17,11 @@ interface PaymentResponse {
     transfer_url: string;
     app_url: string;
     ready_for_terminal: boolean;
+}
+
+// Helper function to check if error has expected properties
+function hasAxiosErrorStructure(error: unknown): error is { response?: { data?: Record<string, unknown>; status: number } } {
+    return typeof error === 'object' && error !== null && 'response' in error;
 }
 
 export class KhipuService {
@@ -130,19 +135,17 @@ export class KhipuService {
             });
 
             console.log('✅ Respuesta exitosa de Khipu:', response.data);
-            return response.data;
-
-        } catch (error: any) {
-            console.error('❌ Error al crear el pago:', error.message);
-            
-            if (error.response) {
-                console.error('📋 Status:', error.response.status);
-                console.error('📋 Headers:', error.response.headers);
-                console.error('📋 Datos del error:', error.response.data);
+            return response.data;        } catch (error: unknown) {
+            console.error('❌ Error al crear el pago:', error instanceof Error ? error.message : 'Error desconocido');
+              if (error && typeof error === 'object' && 'response' in error) {
+                const axiosError = error as { response: { status: number; headers: unknown; data: unknown } };
+                console.error('📋 Status:', axiosError.response.status);
+                console.error('📋 Headers:', axiosError.response.headers);
+                console.error('📋 Datos del error:', axiosError.response.data);
                 
-                const errorMessage = error.response.data?.message || 
-                                   error.response.data?.error || 
-                                   `Error HTTP ${error.response.status}`;
+                const errorMessage = (axiosError.response.data as { message?: string; error?: string })?.message || 
+                                   (axiosError.response.data as { message?: string; error?: string })?.error || 
+                                   `Error HTTP ${axiosError.response.status}`;
                 throw new Error(errorMessage);
             }
             
@@ -173,15 +176,20 @@ export class KhipuService {
                 timeout: 30000
             });
 
-            return response.data;
-
-        } catch (error: any) {
-            console.error('❌ Error al obtener estado del pago:', error.message);
+            return response.data;        } catch (error: unknown) {
+            console.error('❌ Error al obtener estado del pago:', error);
             
-            if (error.response) {
-                const errorMessage = error.response.data?.message || 
-                                   error.response.data?.error || 
-                                   `Error HTTP ${error.response.status}`;
+            if (isAxiosError(error) && error.response) {
+                const responseData = error.response.data as Record<string, unknown>;
+                const errorMessage = String(responseData?.message || 
+                                   responseData?.error ||
+                                   `Error HTTP ${error.response.status}`);
+                throw new Error(errorMessage);
+            } else if (hasAxiosErrorStructure(error) && error.response) {
+                const responseData = error.response.data as Record<string, unknown>;
+                const errorMessage = String(responseData?.message || 
+                                   responseData?.error ||
+                                   `Error HTTP ${error.response.status}`);
                 throw new Error(errorMessage);
             }
             
@@ -212,15 +220,20 @@ export class KhipuService {
                 timeout: 30000
             });
 
-            return response.data;
-
-        } catch (error: any) {
-            console.error('❌ Error al obtener bancos:', error.message);
+            return response.data;        } catch (error: unknown) {
+            console.error('❌ Error al obtener bancos:', error);
             
-            if (error.response) {
-                const errorMessage = error.response.data?.message || 
-                                   error.response.data?.error || 
-                                   `Error HTTP ${error.response.status}`;
+            if (isAxiosError(error) && error.response) {
+                const responseData = error.response.data as Record<string, unknown>;
+                const errorMessage = String(responseData?.message || 
+                                   responseData?.error || 
+                                   `Error HTTP ${error.response.status}`);
+                throw new Error(errorMessage);
+            } else if (hasAxiosErrorStructure(error) && error.response) {
+                const responseData = error.response.data as Record<string, unknown>;
+                const errorMessage = String(responseData?.message || 
+                                   responseData?.error || 
+                                   `Error HTTP ${error.response.status}`);
                 throw new Error(errorMessage);
             }
             
