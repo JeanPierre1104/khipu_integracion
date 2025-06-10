@@ -1,14 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import BankValidator from './BankValidator';
 import type { KhipuWebResult } from '@/types/khipu-web';
 
+interface FormData {
+    amount: string;
+    email: string;
+    subject: string;
+    description: string;
+}
+
 export default function KhipuWebPaymentForm() {
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState(false);    const [paymentResult, setPaymentResult] = useState<KhipuWebResult | null>(null);
-    const [formData, setFormData] = useState({
+    const [loading, setLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string>('');
+    const [success, setSuccess] = useState<boolean>(false);
+    const [paymentResult, setPaymentResult] = useState<KhipuWebResult | null>(null);
+    const [formData, setFormData] = useState<FormData>({
         amount: '',
         email: '',
         subject: '',
@@ -18,10 +26,12 @@ export default function KhipuWebPaymentForm() {
     useEffect(() => {
         // Log para confirmar que el componente ya no depende del SDK
         console.log('✅ Componente de pago configurado para redirección directa (sin SDK)');
-    }, []);    const handleSubmit = async (e: React.FormEvent) => {
+    }, []);
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         console.log('🎯 Form submitted, starting payment process...');
-        
+
         setLoading(true);
         setError('');
         setSuccess(false);
@@ -29,12 +39,12 @@ export default function KhipuWebPaymentForm() {
 
         try {
             const amount = parseInt(formData.amount);
-            
+
             // Validación específica para la prueba técnica de Khipu
             if (isNaN(amount) || amount < 100) {
                 throw new Error('El monto mínimo es $100 CLP');
             }
-            
+
             if (amount > 5000) {
                 throw new Error('Límite máximo de $5.000 CLP para DemoBank (requisito de la prueba técnica)');
             }
@@ -52,7 +62,7 @@ export default function KhipuWebPaymentForm() {
                 cancel_url: `${window.location.origin}/payment/cancelled`,
                 notify_url: `${window.location.origin}/api/notify`
             };
-            
+
             console.log('📡 Enviando request a API:', requestBody);
 
             const response = await fetch('/api/payments', {
@@ -69,28 +79,32 @@ export default function KhipuWebPaymentForm() {
 
             if (!response.ok) {
                 throw new Error(data.error || 'Error al procesar el pago');
-            }            console.log('✅ Pago creado exitosamente:', data);
-            
+            }
+
+            console.log('✅ Pago creado exitosamente:', data);
+
             // Paso 2: Redirigir directamente a la URL de pago (tanto para Khipu real como DemoBank)
             if (data.data && data.data.payment_url) {
                 console.log('🎯 Redirigiendo a payment_url:', data.data.payment_url);
                 console.log('🔍 Tipo de payment_url:', typeof data.data.payment_url);
                 console.log('🔍 Longitud de payment_url:', data.data.payment_url.length);
-                
+
                 // Verificar si es un pago mock de DemoBank para logging
                 if (data.data.payment_id && data.data.payment_id.startsWith('demo_')) {
-                    console.log('🧪 Detectado pago DemoBank Mock - Redirigiendo a simulador');                } else {
+                    console.log('🧪 Detectado pago DemoBank Mock - Redirigiendo a simulador');
+                } else {
                     console.log('🏦 Detectado pago Khipu real - Ejecutando redirección automática');
                 }
-                
+
                 // Verificar que la URL sea válida y redirigir automáticamente
                 try {
                     const url = new URL(data.data.payment_url);
                     console.log('✅ URL válida, protocolo:', url.protocol, 'host:', url.host);
-                      // REDIRECCIÓN AUTOMÁTICA INMEDIATA
+
+                    // REDIRECCIÓN AUTOMÁTICA INMEDIATA
                     console.log('🚀 EJECUTANDO REDIRECCIÓN AUTOMÁTICA AHORA...');
                     console.log('🌐 Redirigiendo a:', data.data.payment_url);
-                    
+
                     // Intentar múltiples métodos para asegurar la redirección
                     try {
                         // Método 1: window.location.href (más compatible)
@@ -109,7 +123,7 @@ export default function KhipuWebPaymentForm() {
                             }
                         }
                     }
-                    
+
                 } catch (urlError) {
                     console.error('❌ URL inválida:', urlError);
                     throw new Error('URL de pago inválida recibida del servidor');
@@ -118,15 +132,17 @@ export default function KhipuWebPaymentForm() {
                 console.error('❌ Estructura de respuesta inesperada:', data);
                 throw new Error('No se recibió la URL de pago en la respuesta');
             }
-            
+
         } catch (err: unknown) {
             console.error('❌ Error en pago:', err);
             setError(err instanceof Error ? err.message : 'Error al procesar el pago');
             setLoading(false);
         }
-    };const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        
+
         // Validación especial para el campo amount
         if (name === 'amount') {
             const numValue = parseInt(value);
@@ -135,45 +151,54 @@ export default function KhipuWebPaymentForm() {
                 return; // No actualizar si es mayor a 5000
             }
         }
-        
+
         setFormData(prev => ({
             ...prev,
             [name]: value
         }));
-    };    const restartPayment = () => {
-        // Ya no necesitamos reiniciar el SDK, simplemente reseteamos el estado        setLoading(false);
+
+        // Reset de estados cuando se cambia cualquier campo
         setError('');
         setSuccess(false);
         setPaymentResult(null);
-    };    const closePayment = () => {
-        // Ya no necesitamos cerrar el SDK, simplemente reseteamos el estado
+    };
+
+    const resetForm = () => {
+        setFormData({
+            amount: '',
+            email: '',
+            subject: '',
+            description: ''
+        });
+        setError('');
+        setSuccess(false);
+        setPaymentResult(null);
         setLoading(false);
     };
 
-    return (        <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
-            <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+    return (
+        <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
+            <h2 className="text-2xl font-bold mb-6 text-center text-black">
                 💳 Pago con Redirección Directa
             </h2>
-            
+
             {error && (
                 <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center">
                             <span className="text-red-500 mr-2">❌</span>
-                            {error}
+                            Error: {error}
                         </div>
-                        {loading && (
-                            <button
-                                onClick={closePayment}
-                                className="ml-2 px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
-                            >
-                                Cerrar
-                            </button>
-                        )}
+                        <button
+                            onClick={() => setError('')}
+                            className="text-red-500 hover:text-red-700 text-xl font-bold"
+                        >
+                            ×
+                        </button>
                     </div>
-                    {paymentResult?.failureReason && (
+                    {error.includes('$5.000') && (
                         <p className="text-xs text-red-600 mt-2">
-                            Razón: {paymentResult.failureReason}
+                            🔍 Límite técnico para DemoBank en esta implementación de prueba
                         </p>
                     )}
                 </div>
@@ -183,24 +208,26 @@ export default function KhipuWebPaymentForm() {
                 <div className="mb-4 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
                     <div className="flex items-center mb-2">
                         <span className="text-green-500 mr-2">✅</span>
-                        {paymentResult.exitTitle}
+                        Pago procesado exitosamente
                     </div>
                     <p className="text-sm text-green-600 mb-3">
-                        {paymentResult.exitMessage}
+                        El pago se ha iniciado correctamente. Serás redirigido automáticamente.
                     </p>
-                    {paymentResult.exitUrl && (
+                    {paymentResult.continueUrl && (
                         <a
-                            href={paymentResult.exitUrl}
-                            className="inline-block w-full py-2 px-4 bg-green-600 text-white text-center rounded-md hover:bg-green-700 transition-colors"
+                            href={paymentResult.continueUrl}
+                            className="inline-block bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700"
                         >
-                            🔗 Ir a página de confirmación
+                            🔗 Continuar al pago
                         </a>
                     )}
-                </div>            )}
+                </div>
+            )}
 
-            <form onSubmit={handleSubmit} className="space-y-4"><div>
-                    <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
-                        💰 Monto (CLP)
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                    <label htmlFor="amount" className="block text-sm font-medium text-black mb-1">
+                        Monto (CLP) *
                     </label>
                     <input
                         type="number"
@@ -208,32 +235,25 @@ export default function KhipuWebPaymentForm() {
                         name="amount"
                         value={formData.amount}
                         onChange={handleChange}
-                        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            formData.amount && (parseInt(formData.amount) < 100 || parseInt(formData.amount) > 5000)
-                                ? 'border-red-300 bg-red-50'
-                                : 'border-gray-300'
-                        }`}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                        placeholder="Ej: 1500"
                         required
-                        max="5000"
                         min="100"
-                        placeholder="Entre $100 y $5.000 CLP"
-                        disabled={loading}
+                        max="5000"
                     />
-                    
-                    {/* Validación en tiempo real */}
+
+                    {/* Validaciones visuales del monto */}
                     {formData.amount && parseInt(formData.amount) > 5000 && (
                         <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
                             <span className="font-medium">❌ Error:</span> El monto máximo para DemoBank es $5.000 CLP
                         </div>
                     )}
-                    
                     {formData.amount && parseInt(formData.amount) < 100 && parseInt(formData.amount) > 0 && (
                         <div className="mt-1 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
                             <span className="font-medium">⚠️ Atención:</span> El monto mínimo para DemoBank es $100 CLP
                         </div>
                     )}
-                    
-                    {(!formData.amount || (parseInt(formData.amount) >= 100 && parseInt(formData.amount) <= 5000)) && (
+                    {formData.amount && parseInt(formData.amount) >= 100 && parseInt(formData.amount) <= 5000 && (
                         <div className="mt-1 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
                             <span className="font-medium">✅ DemoBank:</span> Límite de $100 - $5.000 CLP (Prueba Técnica Khipu)
                         </div>
@@ -241,8 +261,8 @@ export default function KhipuWebPaymentForm() {
                 </div>
 
                 <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                        📧 Email del pagador
+                    <label htmlFor="email" className="block text-sm font-medium text-black mb-1">
+                        Email del pagador *
                     </label>
                     <input
                         type="email"
@@ -250,16 +270,15 @@ export default function KhipuWebPaymentForm() {
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                        placeholder="ejemplo@email.com"
                         required
-                        placeholder="correo@ejemplo.com"
-                        disabled={loading}
                     />
                 </div>
 
                 <div>
-                    <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
-                        📝 Asunto del pago
+                    <label htmlFor="subject" className="block text-sm font-medium text-black mb-1">
+                        Asunto *
                     </label>
                     <input
                         type="text"
@@ -267,28 +286,27 @@ export default function KhipuWebPaymentForm() {
                         name="subject"
                         value={formData.subject}
                         onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                        placeholder="Descripción del pago"
                         required
-                        placeholder="Ej: Compra de producto"
-                        disabled={loading}
                     />
                 </div>
 
                 <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                        📄 Descripción (opcional)
+                    <label htmlFor="description" className="block text-sm font-medium text-black mb-1">
+                        Descripción
                     </label>
                     <textarea
                         id="description"
                         name="description"
                         value={formData.description}
                         onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         rows={3}
-                        placeholder="Descripción detallada del pago (opcional)"
-                        disabled={loading}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                        placeholder="Detalles adicionales del pago (opcional)"
                     />
-                </div>                {/* Componente de validación de bancos */}
+                </div>
+
                 <div className="pt-2 border-t border-gray-200">
                     <BankValidator amount={parseInt(formData.amount) || 0} />
                 </div>
@@ -296,12 +314,8 @@ export default function KhipuWebPaymentForm() {
                 <div className="flex space-x-2">
                     <button
                         type="submit"
-                        disabled={loading || success}
-                        className={`flex-1 py-3 px-4 rounded-md shadow-sm text-sm font-medium text-white transition-colors ${
-                            loading || success
-                                ? 'bg-gray-400 cursor-not-allowed'
-                                : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-                        }`}
+                        disabled={loading}
+                        className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? (
                             <span className="flex items-center justify-center">
@@ -311,23 +325,21 @@ export default function KhipuWebPaymentForm() {
                                 </svg>
                                 Procesando...
                             </span>
-                        ) : success ? (
-                            '✅ Pago completado'                        ) : (
-                            '🔄 Redirigir a Khipu'
+                        ) : (
+                            '💳 Procesar Pago'
                         )}
                     </button>
-
-                    {loading && (
+                    {(error || success) && (
                         <button
                             type="button"
-                            onClick={restartPayment}
-                            className="px-4 py-3 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors"
-                            title="Reiniciar pago"
+                            onClick={resetForm}
+                            className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                         >
-                            🔄
+                            🔄 Reset
                         </button>
                     )}
-                </div>            </form>
+                </div>
+            </form>
 
             {paymentResult && (
                 <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
